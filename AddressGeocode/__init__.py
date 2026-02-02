@@ -45,10 +45,10 @@ def main(body: str) -> str:
     data_factory_name = body['dataFactoryName']
 
     key_vaults = {
-        "am-da-df-view-dev": "https://am-da-kv-general-dev.vault.azure.net/",
-        "am-da-df-view-prd": "https://am-da-kv-general-prd.vault.azure.net/",
-        "am-da-df-view-tst": "https://am-da-kv-general-tst.vault.azure.net/",
-        "am-da-df-view-uat": "https://am-da-kv-general-uat.vault.azure.net/"
+        "<DatafactoryName>-dev": "https://<KVDev>.vault.azure.net/",
+        "<DatafactoryName>-prd": "https://<kvPrd>.vault.azure.net/",
+        "<DatafactoryName>-tst": "https://<kvTst.vault.azure.net/",
+        "<DatafactoryName>-uat": "https:/<kvUAT>.vault.azure.net/"
     }
 
     logging.info("Retrieving secrets...")
@@ -57,17 +57,18 @@ def main(body: str) -> str:
     secret_client = SecretClient(vault_url = key_vault_url, credential = credential)
  
 
-
-    subscription_key=secret_client.get_secret('ViewMigrationAzureMapsKey').value
-    server = secret_client.get_secret('ViewMigrationMapsSQLServer').value
-    database = secret_client.get_secret('ViewMigrationMapsSQLdb').value
-    username = secret_client.get_secret('ViewMigrationMapsSQLdbUser').value
-    password = secret_client.get_secret('ViewMigrationMapsSQLdbPass').value
+    subscription_key=secret_client.get_secret('<AzureMapsKeySecretName>').value
+    server = secret_client.get_secret('<SQLServerNameSecret>').value
+    database = secret_client.get_secret('<SQLDBSameSecret>').value
+    username = secret_client.get_secret('<SQLUsernameSecret').value
+    password = secret_client.get_secret('<SQLPasswordSecret>').value
     port = '1433'
-    storage_name = secret_client.get_secret('AmDaDataGeneralEnvURL').value
-    storage_secret = secret_client.get_secret('AmDaDataGeneralEnvKEY').value
+    storage_name = secret_client.get_secret('<StorageURL>').value
+    storage_secret = secret_client.get_secret('<StorageSecret>').value
     driver = '{ODBC Driver 17 for SQL Server}'#'{ODBC Driver 17 for SQL Server}'
-
+    subscription_key = secret_client.get_secret('<AZMapsSubscriptionKey>')
+    storage_container = secret_client.get_secret('<StorageContainerName>'
+    
     logging.info("Secrets retrieved.")
 
     logging.info("Establishing blob account connection...")
@@ -101,8 +102,7 @@ def main(body: str) -> str:
 
         dfp = pd.read_sql(query, connect_str)
         req = dfp['dataset'][0]
-        url = f"https://atlas.microsoft.com/search/address/batch/json?subscription-key=uZ3iCKWUjoKQD5sQ9UXH1GotTsHX9G3CrROVzbwzwO4&api-version=1.0"
-        #f"https://atlas.microsoft.com/search/address/batch/json?subscription-key={subscription_key}&api-version=1.0"
+        url = f"https://atlas.microsoft.com/search/address/batch/json?subscription-key={subscription_key}&api-version=1.0"
         payload = json.loads(req)
         payload = json.dumps(payload)
         headers = {
@@ -146,7 +146,7 @@ def main(body: str) -> str:
         
         datafile=result.to_csv(sep="|", index = False, encoding="utf-8")
         logging.info('writing to blob:  ' + storage_name+'/NewFiles/Geocode/'+ filename)
-        blob_client = blob_account.get_blob_client(container = "am-da-bc-view-migr", blob = 'NewFiles/Geocode/'+filename)
+        blob_client = blob_account.get_blob_client(container = {storage_container}, blob = 'NewFiles/Geocode/'+filename)
         blob_client.upload_blob(datafile,blob_type="BlockBlob")
         logging.info('writing to blob COMPLETE')
         
@@ -166,4 +166,5 @@ def main(body: str) -> str:
         address_processing(query)
         time.sleep(5)
  #       t1 = time.time() - t0    
+
  #       logging.info("Time elapsed: ", t1)
